@@ -1,6 +1,6 @@
 #include <SoftwareSerial.h>
 
-#define LED_PIN 0
+#define LED_PIN 4
 
 SoftwareSerial espSerial(2, 3);
 
@@ -14,6 +14,7 @@ char getSt[4] = "GET";
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);
+  Serial.begin(9600);
   espSerial.begin(9600);
   espSerial.println("AT+RST");
   delay(2000);
@@ -21,23 +22,31 @@ void setup() {
   delay(500);
   espSerial.println("AT+CIPSERVER=1,8080");
   delay(500);
+  Serial.println("Ready");
 }
 
 void loop() {
   while(espSerial.available()) {
     if (search(ipdSt)) {
       char id = findConnID();
-      
+      Serial.print("New connection with ID: ");
+      Serial.println(id);
+
       while(espSerial.available()) {
 
         if (search(getSt)) {
+          Serial.println("New GET Request");
           skip(7);
           char* out = serialRead(4); //Read 3 chars from the serial buffer into out (RAM Buffer)
           if (strstr(out, "on") != NULL) { //Return a pointer to the first occurrence of 2 in 1
+            Serial.println("ON");
             digitalWrite(LED_PIN, HIGH);
             isOK = true; //Ok flag set
           } else if (strstr(out, "off") != NULL) {
+            Serial.println("OFF");
             digitalWrite(LED_PIN, LOW);
+          } else {
+          Serial.println("Unk?");
           }
           
           espSerial.flush(); //Clean the serial buffer
@@ -68,6 +77,7 @@ void loop() {
       espSerial.print("AT+CIPCLOSE=");
       espSerial.println(id);
       delay(100);
+      Serial.println("Connection closed.");
     }
   }
 }
